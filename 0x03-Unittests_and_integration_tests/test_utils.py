@@ -38,6 +38,8 @@ class TestGetJson(unittest.TestCase):
         """test get_json with a mock request.get method
         and different parameters
         """
-        mock_get.return_value.json.return_value = test_payload
+        mock_response = unittest.mock.Mock()
+        mock_response.json.return_value = test_payload
+        mock_get.return_value = mock_response
         self.assertEqual(get_json(test_url), test_payload)
         mock_get.assert_called_once_with(test_url)
