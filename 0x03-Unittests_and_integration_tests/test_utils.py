@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """defines a test class to test utils.access_nested_map"""
 import unittest
+from unittest.mock import patch, Mock
 from parameterized import parameterized
 access_nested_map = __import__('utils').access_nested_map
 get_json = __import__('utils').get_json
@@ -33,13 +34,11 @@ class TestGetJson(unittest.TestCase):
         ("http://example.com", {"payload": True}),
         ("http://holberton.io", {"payload": False})
     ])
-    @unittest.mock.patch('requests.get')
-    def test_get_json(self, test_url, test_payload, mock_get):
+    def test_get_json(self, test_url, test_payload):
         """test get_json with a mock request.get method
         and different parameters
         """
-        mock_response = unittest.mock.Mock()
-        mock_response.json.return_value = test_payload
-        mock_get.return_value = mock_response
-        self.assertEqual(get_json(test_url), test_payload)
-        mock_get.assert_called_once_with(test_url)
+        mock_response = Mock(**{'json.return_value': test_payload})
+        with patch('requests.get', return_value=mock_response) as mock_get:
+            self.assertEqual(get_json(test_url), test_payload)
+            mock_get.assert_called_once_with(test_url)
