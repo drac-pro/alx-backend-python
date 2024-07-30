@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """defines a test class to test the client module"""
 import unittest
-from unittest.mock import patch, Mock, PropertyMock
-from parameterized import parameterized
-from client import (GithubOrgClient)
-TEST_PAYLOAD = __import__('fixtures').TEST_PAYLOAD
+from unittest.mock import (patch, Mock, PropertyMock)
+from parameterized import (parameterized, parameterized_class)
+from client import GithubOrgClient
+from requests import HTTPError
+from fixtures import TEST_PAYLOAD
 
 
 class TestGithubOrgClient(unittest.TestCase):
@@ -56,3 +57,35 @@ class TestGithubOrgClient(unittest.TestCase):
         gh_org_client = GithubOrgClient("google")
         client_has_licence = gh_org_client.has_license(repo, key)
         self.assertEqual(client_has_licence, expected)
+
+
+@parameterized_class([
+    {
+        'org_payload': TEST_PAYLOAD[0][0],
+        'repos_payload': TEST_PAYLOAD[0][1],
+        'expected_repos': TEST_PAYLOAD[0][2],
+        'apache2_repos': TEST_PAYLOAD[0][3]
+    }
+])
+class TestIntegrationGithubOrgClient(unittest.TestCase):
+    """Intergration test of GithubOrgClient class"""
+    @classmethod
+    def setUpClass(cls):
+        """sets up the test class before running test casses"""
+        url_payload = {
+            'https://api.github.com/orgs/google': cls.org_payload,
+            'https://api.github.com/orgs/google/repos': cls.repos_payload
+        }
+
+        def get_payload(url):
+            if url in url_payload:
+                return Mock(**{'json.return_value': url_payload[url]})
+            return HTTPError
+
+        cls.get_patcher = patch('requests.get', side_effect=get_payload)
+        cls.get_patcher.start()
+
+    @classmethod
+    def tearDownClass(cls):
+        """stops patcher"""
+        cls.get_patcher.stop()
